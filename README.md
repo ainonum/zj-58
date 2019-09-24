@@ -7,12 +7,12 @@ Originally it was reverse-engineered filter for Zijiang zj-58 with it's specific
 but later it is revealed that it actually works with many other cheap 58mm printers, like
 Xprinter XP-58.
 
+Forked for reworking for the GPrinter GP5890XIII, specifically for a non-cash drawer application to print images & Chinese characters in addition to text. Reworked for compatability with CUPS 1.3.x
+
 Features
 --------
 
 **Cutter**. If available, may be invoked either after every page, either after the whole job.
-
-Supported **2 Cash drawers** each may be opened either before, either after a whole print job. Length of the impulses to drive drawers may be customized.
 
 **Blank feeds**: after printed job, or after every page paper may be rolled for extra 3-45mm with step 3mm
 
