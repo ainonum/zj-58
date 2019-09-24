@@ -20,12 +20,6 @@ static inline int min(int a, int b) {
 // settings and their stuff
 struct settings_ {
   int modelNum; // the only setting we get from PPD.
-  unsigned CashDrawer1;
-  unsigned CashDrawer2;
-  unsigned CashDrawer1On;
-  unsigned CashDrawer1Off;
-  unsigned CashDrawer2On;
-  unsigned CashDrawer2Off;
   cups_bool_t InsertSheet;
   cups_adv_t AdvanceMedia;
   cups_cut_t CutMedia;
@@ -45,13 +39,7 @@ static void update_settings_from_job (cups_page_header2_t * pHeader)
 {
   if (!pHeader)
     return;
-  settings.CashDrawer1 = pHeader->cupsInteger[0];
-  settings.CashDrawer2 = pHeader->cupsInteger[1];
-  settings.CashDrawer1On = pHeader->cupsInteger[2];
-  settings.CashDrawer1Off = pHeader->cupsInteger[3];
-  settings.CashDrawer2On = pHeader->cupsInteger[4];
-  settings.CashDrawer2Off = pHeader->cupsInteger[5];
-  settings.InsertSheet = pHeader->cupsInteger[6];
+  settings.InsertSheet = (cups_bool_t)pHeader->cupsInteger[0];
   settings.AdvanceMedia = pHeader->AdvanceMedia;
   settings.CutMedia = pHeader->CutMedia;
   settings.AdvanceDistance = pHeader->AdvanceDistance;
@@ -120,23 +108,43 @@ static inline void mputnum(unsigned int val) {
  * // another commands out-of-spec:
  * esc 'i' - cutter; xprinter android example shows as GS V \1 (1D 56 01)
  * esc '8' - wait{4, cutter also (char[4]){29,'V','A',20}}; GS V 'A' 20
+ * //Added for Gprinter GP5890XIII
+ * ESC ! n Set print mode
+ * ESC * m nL nH d1... dk Select bit-image mode
+ * ESC R n Select an international character set
+ * FS p n m Print NV bitmap image
+ * FS q n [xL xH yL yH d1...dk]1...[xL xH yL yH d1...dk]n Define NV bitmap image
+ * GS * x y d1...d(x × y × 8) Define downloaded bit image
+ * GS / m Print downloaded bit image
+ * GS v 0 m xL xH yL yH d1...dk Print bitmap image
  */
 
 // define printer initialize command
 static const char escInit[] = "\x1b@";
-
-// define cashDrawerEjector command
-static const char escCashDrawerEject[] = "\x1bp";
-
 // define raster mode start command
 static const char escRasterMode[] = "\x1dv0\0";
-
 // define flush command
 static const char escFlush[] = "\x1bJ";
-
 // define cut command
 //static const char escCut[] = "\x1bi";
 static const char escCut[] = "\x1dV\1";
+//define print mode selsction. Append number for mode 
+static const char escPMode[] = "\x1b!";
+//define bitmap image mode selection. Append m nL nH d1 ... dk image params
+static const char escBitImageMode[] = "\x1b*";
+//define selected international char set. Append n charset num. 
+static const char escIntCharSet[] =  "\x1bR";
+//define print from NV mem bitmap image command. Append n m selection. 
+static const char fsPrintNVImage[] = "\x1cp";
+//define NV bit image define command. Append n [xL xH yL yH d1...dk]1...[xL xH yL yH d1...dk]n;
+static const char fsDefNVImage[] = "\x1cq";
+//define Downloaded image definition command. Append xy d1..d(x*y*8)
+static const char gsDefDownImage[] = "\x1d*";
+//define Print downloaded image command. Append image m
+static const char gsPrintDownImage[] = "\x1d/";
+//define Print bitmap image defined in command sequence. Append  m xL xH yL yH d1...dk 
+static const char gsPrintInclImage[] = "\x1dv0";
+
 
 // enter raster mode and set up x and y dimensions
 static inline void sendRasterHeader(int xsize, int ysize) {
@@ -169,15 +177,6 @@ static inline void flushManyLines(int iLines)
   }
 }
 
-inline static void CashDrawerEject (unsigned iDrawer, unsigned iOn,
-                                   unsigned iOff)
-{
-  SendCommand(escCashDrawerEject);
-  mputchar(iDrawer);
-  mputchar(iOn);
-  mputchar(iOff);
-}
-
 inline static void cutMedia()
 {
   SendCommand(escCut);
@@ -186,19 +185,11 @@ inline static void cutMedia()
 // sent on the beginning of print job
 void setupJob() {
   SendCommand(escInit);
-  if (settings.CashDrawer1 == 1)
-    CashDrawerEject(0,settings.CashDrawer1On,settings.CashDrawer1Off);
-  if (settings.CashDrawer2 == 1)
-    CashDrawerEject(1, settings.CashDrawer2On, settings.CashDrawer2Off);
 }
 
 // sent at the very end of print job
 void finalizeJob() {
-  if (settings.CashDrawer1 == 2)
-    CashDrawerEject(0, settings.CashDrawer1On, settings.CashDrawer1Off);
-  if (settings.CashDrawer2 == 2)
-    CashDrawerEject(1, settings.CashDrawer2On, settings.CashDrawer2Off);
-//  SendCommand(escInit);
+  
 }
 
 // sent at the end of every page
