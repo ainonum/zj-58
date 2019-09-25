@@ -41,8 +41,8 @@ if ( RASTER_TYPE STREQUAL "New" )
 	target_compile_definitions ( rastertozj PRIVATE NEWRASTER )
 endif()
 
-# build ppds
-if ( NOT DEFINED PPDC )
+# DO NOT build ppds, req tool not available in our version
+#[[if ( NOT DEFINED PPDC )
 	find_program ( PPDC ppdc )
 endif ()
 mark_as_advanced( PPDC )
@@ -67,7 +67,7 @@ else()
 	message (STATUS "No ppdc found; fall back to defaultly shipped ZJ-58.ppd")
 	list ( APPEND PPDS "${CMAKE_CURRENT_SOURCE_DIR}/zj58.ppd" )
 	list ( APPEND PPDS "${CMAKE_CURRENT_SOURCE_DIR}/zj80.ppd" )
-endif()
+endif()]]
 
 # installation stuff
 
